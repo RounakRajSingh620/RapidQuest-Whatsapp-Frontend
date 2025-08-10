@@ -1,35 +1,40 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import ChatWindow from "../components/ChatWindow";
 import { fetchGroupedMessages } from "../api/messages";
 
-function Home() {
+export default function Home() {
   const [chatData, setChatData] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // ✅ Stable fetchMessages so it can be used in deps
+  // Fetch all chats (grouped by user)
   const fetchMessages = useCallback(async () => {
     try {
+      setLoading(true);
       const data = await fetchGroupedMessages();
-      console.log("✅ Loaded chatData from backend:", data);
+      console.log("✅ Loaded chatData:", data);
       setChatData(data);
 
-      // If a user is selected, update messages for that user
+      // Update messages for currently selected user
       if (selectedUser && data[selectedUser.wa_id]) {
         setMessages(data[selectedUser.wa_id].messages);
       }
     } catch (err) {
-      console.error("❌ Failed to fetch chatData", err);
+      console.error("❌ Failed to fetch chat data:", err);
+      setError("Could not load chats.");
+    } finally {
+      setLoading(false);
     }
   }, [selectedUser]);
 
-  // Initial load
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Update messages when selectedUser or chatData changes
+  // Update messages when selectedUser changes
   useEffect(() => {
     if (selectedUser && chatData[selectedUser.wa_id]) {
       setMessages(chatData[selectedUser.wa_id].messages);
@@ -37,6 +42,9 @@ function Home() {
       setMessages([]);
     }
   }, [selectedUser, chatData]);
+
+  if (loading) return <p>Loading chats...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
     <div className="flex h-screen">
@@ -50,5 +58,3 @@ function Home() {
     </div>
   );
 }
-
-export default Home;
