@@ -9,27 +9,30 @@ function ChatWindow({ user, messages, setMessages, currentUserWaId }) {
   const [newMessage, setNewMessage] = useState("");
   const chatEndRef = useRef(null);
 
-  // ✅ Auto-scroll when messages change
+  // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ✅ Socket listeners for current user
+  // Socket events
   useEffect(() => {
     if (!user) return;
 
     const handleNewMessage = (msg) => {
-      if (msg.wa_id === user.wa_id || msg.fromSelf) {
-        setMessages((prev) => {
-          const exists = prev.some(
-            (m) =>
-              (m.message_id && m.message_id === msg.message_id) ||
-              (m.temp_id && m.temp_id === msg.temp_id)
+      setMessages((prev) => {
+        // Replace temp message if IDs match
+        if (msg.temp_id) {
+          return prev.map((m) =>
+            m.temp_id === msg.temp_id ? { ...msg } : m
           );
-          if (exists) return prev;
-          return [...prev, msg];
-        });
-      }
+        }
+
+        // Deduplication: avoid adding if message_id exists
+        const exists = prev.some(
+          (m) => m.message_id && m.message_id === msg.message_id
+        );
+        return exists ? prev : [...prev, msg];
+      });
     };
 
     const handleStatusUpdate = (updatedMsg) => {
@@ -47,9 +50,9 @@ function ChatWindow({ user, messages, setMessages, currentUserWaId }) {
       socket.off("new_message", handleNewMessage);
       socket.off("status_update", handleStatusUpdate);
     };
-  }, [user, setMessages]); // ✅ Include `user` instead of `user?.wa_id`
+  }, [user, setMessages]);
 
-  // ✅ Send message
+  // Send message
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -99,12 +102,12 @@ function ChatWindow({ user, messages, setMessages, currentUserWaId }) {
         {user.name} ({user.wa_id})
       </div>
 
-      {/* Message List */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#ece5dd]">
         {messages.length > 0 ? (
           messages.map((msg, idx) => (
             <MessageBubble
-              key={msg.message_id || msg.temp_id || idx}
+              key={`${msg.message_id || msg.temp_id || `msg-${idx}-${Date.now()}`}`}
               message={msg}
               currentUserWaId={currentUserWaId}
             />

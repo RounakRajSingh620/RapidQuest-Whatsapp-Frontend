@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import ChatWindow from "../components/ChatWindow";
 import { fetchGroupedMessages } from "../api/messages";
+import socket from "../socket"; // import socket instance
 
 export default function Home() {
   const [chatData, setChatData] = useState({});
@@ -10,7 +11,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch all chats (grouped by user)
   const fetchMessages = useCallback(async () => {
     try {
       setLoading(true);
@@ -18,7 +18,6 @@ export default function Home() {
       console.log("✅ Loaded chatData:", data);
       setChatData(data);
 
-      // Update messages for currently selected user
       if (selectedUser && data[selectedUser.wa_id]) {
         setMessages(data[selectedUser.wa_id].messages);
       }
@@ -34,7 +33,6 @@ export default function Home() {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Update messages when selectedUser changes
   useEffect(() => {
     if (selectedUser && chatData[selectedUser.wa_id]) {
       setMessages(chatData[selectedUser.wa_id].messages);
@@ -42,6 +40,32 @@ export default function Home() {
       setMessages([]);
     }
   }, [selectedUser, chatData]);
+
+  // Listen for real-time messages
+  useEffect(() => {
+    socket.on("new_message", (msg) => {
+      console.log("📩 New message received:", msg);
+
+      // Update chatData with the new message
+      setChatData((prev) => {
+        const updated = { ...prev };
+        if (!updated[msg.wa_id]) {
+          updated[msg.wa_id] = { name: msg.name, wa_id: msg.wa_id, messages: [] };
+        }
+        updated[msg.wa_id].messages = [...updated[msg.wa_id].messages, msg];
+        return updated;
+      });
+
+      // If currently viewing this chat, also update messages state
+      if (selectedUser && msg.wa_id === selectedUser.wa_id) {
+        setMessages((prev) => [...prev, msg]);
+      }
+    });
+
+    return () => {
+      socket.off("new_message");
+    };
+  }, [selectedUser]);
 
   if (loading) return <p>Loading chats...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;

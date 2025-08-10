@@ -15,15 +15,11 @@ function MessageBubble({ message, currentUserWaId }) {
   return (
     <div className={`flex ${isSentBySelf ? "justify-end" : "justify-start"}`}>
       <div
-        className={`relative max-w-[65%] px-3 py-2 rounded-lg shadow text-sm ${
+        className={`relative max-w-[75%] md:max-w-[65%] px-3 py-2 shadow text-sm break-words ${
           isSentBySelf
-            ? "bg-[#dcf8c6] rounded-br-none"
-            : "bg-white rounded-bl-none"
+            ? "bg-[#dcf8c6] rounded-2xl rounded-br-none"
+            : "bg-white rounded-2xl rounded-bl-none"
         }`}
-        style={{
-          borderTopLeftRadius: isSentBySelf ? "8px" : "0px",
-          borderTopRightRadius: isSentBySelf ? "0px" : "8px",
-        }}
       >
         {/* Message Text */}
         <div className="whitespace-pre-wrap">{message.text}</div>
@@ -31,29 +27,31 @@ function MessageBubble({ message, currentUserWaId }) {
         {/* Time + Status */}
         <div
           className={`text-xs mt-1 flex items-center gap-1 ${
-            isSentBySelf ? "justify-end text-gray-600" : "justify-start text-gray-500"
+            isSentBySelf
+              ? "justify-end text-gray-600"
+              : "justify-start text-gray-500"
           }`}
         >
           {time}
           {isSentBySelf && (
             <span
               className={`ml-1 ${
-                message.status === "read" ? "text-blue-500" : ""
+                message.status === "read" ? "text-blue-500" : "text-gray-500"
               }`}
             >
-              {statusIcons[message.status]}
+              {statusIcons[message.status] || statusIcons.sent}
             </span>
           )}
         </div>
 
         {/* Bubble Tail */}
         <span
-          className={`absolute bottom-0 w-0 h-0 border-t-[10px] border-t-transparent ${
+          className={`absolute bottom-0 w-0 h-0 border-t-[12px] border-t-transparent ${
             isSentBySelf
-              ? "border-l-[10px] border-l-[#dcf8c6] right-[-8px]"
-              : "border-r-[10px] border-r-white left-[-8px]"
+              ? "border-l-[12px] border-l-[#dcf8c6] right-[-8px]"
+              : "border-r-[12px] border-r-white left-[-8px]"
           }`}
-        ></span>
+        />
       </div>
     </div>
   );
